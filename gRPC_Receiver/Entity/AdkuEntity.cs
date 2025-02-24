@@ -7,12 +7,12 @@
     /// <summary>
     /// Сущность измененного параметра АДКУ
     /// </summary>
-    public class AdkuEntity 
+    public class AdkuEntity
     {
         /// <summary>
         /// Тип журнала
         /// </summary>
-        //public RegisterType RegisterType { get; set; }
+        public RegisterType RegisterType { get; set; }
 
         /// <summary>
         /// Значение
@@ -22,15 +22,15 @@
         /// <summary>
         /// Дата/время
         /// </summary>
-        //public DateTime DateTime { get; set; }
+        public DateTime DateTime { get; set; }
 
         /// <summary>
-        /// Дата/время записи в БД
+        /// Дата/время UTC
         /// </summary>
-        //public DateTime WriteDate { get; set; }
+        public DateTime DateTimeUTC { get; set; }
 
         /// <summary>
-        /// Имя
+        /// Период
         /// </summary>
         public string? TagName { get; set; }
     }

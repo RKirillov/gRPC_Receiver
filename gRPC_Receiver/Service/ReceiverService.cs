@@ -73,7 +73,7 @@ namespace gRPC_Receiver.Service
                     _channel.Writer.TryWrite(adkuEntity);
                 }
                 entityCounter++;
-                Console.WriteLine("{0}, counter: {1}", adkuEntity.Value.ToString(), entityCounter.ToString());
+                Console.WriteLine("value {0}, datetime: {1}, datetimeUTC: {2}, RegisterType: {3}", adkuEntity.Value.ToString(), adkuEntity.DateTime.ToString(), adkuEntity.DateTimeUTC.ToString(),adkuEntity.RegisterType);
 
             }
         }
