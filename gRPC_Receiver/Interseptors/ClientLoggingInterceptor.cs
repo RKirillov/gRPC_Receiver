@@ -2,7 +2,7 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 
-namespace gRPC_Receiver.Interceptors
+namespace gRPC_Receiver.Interseptors
 {
     public class ClientLoggingInterceptor : Interceptor
     {
@@ -28,20 +28,20 @@ namespace gRPC_Receiver.Interceptors
         TRequest request,
         ClientInterceptorContext<TRequest, TResponse> context,
         AsyncServerStreamingCallContinuation<TRequest, TResponse> continuation)
-            {
-                _logger.LogInformation("Starting call. Type/Method: {Type} / {Method}",
-                    context.Method.Type, context.Method.Name);
-                return continuation(request, context);
-            }
+        {
+            _logger.LogInformation("Starting call. Type/Method: {Type} / {Method}",
+                context.Method.Type, context.Method.Name);
+            return continuation(request, context);
+        }
 
 
-        public override AsyncClientStreamingCall<TRequest, TResponse> AsyncClientStreamingCall <TRequest, TResponse>(
+        public override AsyncClientStreamingCall<TRequest, TResponse> AsyncClientStreamingCall<TRequest, TResponse>(
         ClientInterceptorContext<TRequest, TResponse> context,
         AsyncClientStreamingCallContinuation<TRequest, TResponse> continuation)
         {
             _logger.LogInformation("Starting call. Type/Method: {Type} / {Method}",
                 context.Method.Type, context.Method.Name);
-            return continuation( context);
+            return continuation(context);
         }
     }
 }
