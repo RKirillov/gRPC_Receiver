@@ -18,12 +18,12 @@ builder.Services.AddSingleton<IReceiverService, ReceiverService>();
 builder.Services.AddSingleton<IChannelService, ChannelService>();
 builder.Services.AddAutoMapper(typeof(EntityMappingProfile));
 builder.Services.AddHostedService<ReceiverServiceWithTimer>(); // Регистрация фонового сервиса
-builder.Services.AddScoped<ITokenProvider, AppTokenProvider>();
+builder.Services.AddSingleton<ITokenProvider, AppTokenProvider>();
 builder.Services.AddSingleton<ClientLoggingInterceptor>();
 
 builder.Services.AddGrpcClient<SenderService.SenderServiceClient>(options =>
 {
-    options.Address = new Uri("http://localhost:5000"); // Укажите адрес вашего gRPC-сервера
+    options.Address = new Uri("https://localhost:5000"); // Укажите адрес вашего gRPC-сервера
 })
         //Bearer token with gRPC client factory
         .AddCallCredentials((context, metadata, serviceProvider) =>
