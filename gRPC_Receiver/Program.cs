@@ -6,6 +6,10 @@ using gRPC_Receiver.Service;
 using gRPC_Receiver.Mapper;
 using gRPC_Receiver.Interseptors;
 using gRPC_Receiver.JWT; // Пространство имен для вашего gRPC сервиса
+using gRPC_Receiver.RabbitMQ;
+using Microsoft.Extensions.Options;
+using RabbitMQ.Client;
+using gRPC_Receiver.Interseptors; // Пространство имен для вашего gRPC сервиса
 
 // Регистрация сервисов
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +38,29 @@ builder.Services.AddGrpcClient<SenderService.SenderServiceClient>(options =>
             return Task.CompletedTask;
         })
 .AddInterceptor<ClientLoggingInterceptor>(); // Добавляем интерсептор;
+
+
+// Регистрация настроек из appsettings.json
+builder.Services.Configure<BusConnectOptions>(builder.Configuration.GetSection("BusConnectOptions"));
+
+
+// Регистрация фабрики соединений как Singleton
+builder.Services.AddSingleton<IConnectionFactory>(provider =>
+{
+    var busOptions = provider.GetRequiredService<IOptions<BusConnectOptions>>().Value;
+    return new ConnectionFactory()
+    {
+        UserName = busOptions.Username,
+        Password = busOptions.Password,
+        HostName = busOptions.Host,
+        Port = busOptions.Port,
+        VirtualHost = busOptions.VirtualHost
+    };
+});
+
+// Регистрация самого сервиса, который использует IConnectionFactory
+builder.Services.AddScoped<IProducerMessageService, ProducerMessageService>();
+
 
 // Настройка Swagger (если используется)
 builder.Services.AddEndpointsApiExplorer();
