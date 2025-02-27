@@ -1,6 +1,8 @@
-﻿namespace gRPC_Receiver.RabbitMQ
+﻿
+namespace gRPC_Receiver.RabbitMQ
 {
-    public interface IProducerMessageService
+    public interface IProducerMessageService : IDisposable
     {
+        Task PublishMessage<T>(T message);
     }
 }

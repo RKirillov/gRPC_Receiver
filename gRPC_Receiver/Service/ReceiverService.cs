@@ -2,7 +2,6 @@
 using Grpc.Core;
 using gRPC_Receiver.Entity;
 using GrpcServices;
-using System;
 using System.Threading.Channels;
 
 namespace gRPC_Receiver.Service
@@ -14,19 +13,11 @@ namespace gRPC_Receiver.Service
         private readonly SenderService.SenderServiceClient _senderServiceClient;
         private readonly IMapper _mapper;
         private readonly Channel<AdkuEntity> _channel;
-        private int entityCounter = 0;
-        public ReceiverService(ILogger<ReceiverService> logger, IMapper mapper, SenderService.SenderServiceClient senderServiceClient)
+        public ReceiverService(ILogger<ReceiverService> logger, IMapper mapper, SenderService.SenderServiceClient senderServiceClient,Channel<AdkuEntity> channel)
         {
             _logger = logger;
             _mapper = mapper;
-
-            // Создание ограниченного канала с емкостью 10000
-            _channel = System.Threading.Channels.Channel.CreateBounded<AdkuEntity>(new BoundedChannelOptions(30000)
-            {
-                FullMode = BoundedChannelFullMode.Wait, // Блокирует запись, если канал переполнен
-                SingleReader = true, // Разрешает только один поток для чтения
-                SingleWriter = false  // Разрешает только один поток для записи
-            });
+            _channel = channel;
 
             // Подключение к серверу gRPC (порт 5000, например)
             /*            var grpcServerAddress = "http://localhost:5000"; // Адрес сервера gRPC
@@ -72,15 +63,9 @@ namespace gRPC_Receiver.Service
                     await _channel.Writer.WaitToWriteAsync(cancellationToken);
                     _channel.Writer.TryWrite(adkuEntity);
                 }
-                entityCounter++;
                 Console.WriteLine("value {0}, datetime: {1}, datetimeUTC: {2}, RegisterType: {3}", adkuEntity.Value.ToString(), adkuEntity.DateTime.ToString(), adkuEntity.DateTimeUTC.ToString(),adkuEntity.RegisterType);
 
             }
-        }
-
-        public Channel<AdkuEntity> GetChannel()
-        {
-            return _channel;
         }
     }
 }

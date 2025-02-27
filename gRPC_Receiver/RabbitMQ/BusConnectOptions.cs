@@ -7,6 +7,9 @@
         public string Host { get; set; }
         public int Port { get; set; }
         public string VirtualHost { get; set; }
+        public int DeliveryMode { get; set; }
+        public string Expiration { get; set; } // Время жизни в миллисекундах
+        public string ContentType { get; set; }
     }
 
 }

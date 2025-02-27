@@ -1,6 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Grpc.Net.Client;
+
 using GrpcServices;
 using gRPC_Receiver.Service;
 using gRPC_Receiver.Mapper;
@@ -9,17 +7,33 @@ using gRPC_Receiver.JWT; // Пространство имен для вашего gRPC сервиса
 using gRPC_Receiver.RabbitMQ;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
-using gRPC_Receiver.Interseptors; // Пространство имен для вашего gRPC сервиса
+using System.Threading.Channels;
+using gRPC_Receiver.Entity;
 
 // Регистрация сервисов
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IReceiverService, ReceiverService>();
+// Регистрация самого сервиса, который использует IConnectionFactory
+builder.Services.AddSingleton<IProducerMessageService, ProducerMessageService>();
 builder.Services.AddSingleton<IChannelService, ChannelService>();
 builder.Services.AddAutoMapper(typeof(EntityMappingProfile));
 builder.Services.AddHostedService<ReceiverServiceWithTimer>(); // Регистрация фонового сервиса
 builder.Services.AddSingleton<ITokenProvider, AppTokenProvider>();
 builder.Services.AddSingleton<ClientLoggingInterceptor>();
+
+// Регистрация канала как singleton
+var channel = Channel.CreateBounded<AdkuEntity>(new BoundedChannelOptions(300000)
+{
+    FullMode = BoundedChannelFullMode.Wait,
+    SingleReader = true,
+    SingleWriter = false
+
+});
+builder.Services.AddSingleton(channel);
+
+// Регистрация фоновой службы
+builder.Services.AddHostedService<ChannelProcessingService>();
 
 builder.Services.AddGrpcClient<SenderService.SenderServiceClient>(options =>
 {
@@ -58,8 +72,7 @@ builder.Services.AddSingleton<IConnectionFactory>(provider =>
     };
 });
 
-// Регистрация самого сервиса, который использует IConnectionFactory
-builder.Services.AddScoped<IProducerMessageService, ProducerMessageService>();
+
 
 
 // Настройка Swagger (если используется)

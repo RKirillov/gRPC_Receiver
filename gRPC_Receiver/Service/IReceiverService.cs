@@ -9,10 +9,5 @@ namespace gRPC_Receiver.Service
         /// Метод для асинхронного получения данных от gRPC сервера.
         /// </summary>
         Task ReceiveEntitiesAsync(CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Метод для получения канала данных, в который будут записываться полученные сущности.
-        /// </summary>
-        Channel<AdkuEntity> GetChannel();
     }
 }
