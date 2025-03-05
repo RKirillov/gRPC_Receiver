@@ -14,29 +14,33 @@ namespace gRPC_Receiver.RabbitMQ
         private const string RoutingKey = "Pcf.ReceivingFromPartner.Promocode";
 
         private readonly IConnectionFactory _connectionFactory;
-        private  IConnection? _connection;
-        private  IModel? _channel;
+        private IConnection? _connection;
+        private IModel? _channel;
         private readonly BusConnectOptions _busConnectOptions;
+        //private readonly Lazy<Task> _initializeTask;
+        private readonly Lazy<bool> _initialize;
 
         public ProducerMessageService(IConnectionFactory connectionFactory, IOptions<BusConnectOptions> busConnectOptions)
         {
             _connectionFactory = connectionFactory;
-            InitializeConnection();
 
             _busConnectOptions = busConnectOptions.Value;
-
+            // Откладываем инициализацию до первого вызова
+            //_initializeTask = new Lazy<Task>(() => InitializeConnection());
+            _initialize = new Lazy<bool>(InitializeConnection);
         }
-        private void InitializeConnection()
+
+        private bool InitializeConnection()
         {
             // Определяем политику повторных попыток с использованием Polly
             var retryPolicy = Policy
                 .Handle<BrokerUnreachableException>() // Обрабатываем исключение BrokerUnreachableException
                 .Or<SocketException>() // Также обрабатываем исключения сокетов
-                .WaitAndRetryForeverAsync(retryAttempt =>
+                .WaitAndRetryForever(retryAttempt =>
                 {
                     // Вычисляем экспоненциальную задержку с максимальным значением 60 секунд
                     var delay = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                    var result= delay > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : delay;
+                    var result = delay > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : delay;
                     return result;
                 },
                 (exception, result, context) =>
@@ -46,7 +50,7 @@ namespace gRPC_Receiver.RabbitMQ
                 });
 
             // Выполняем политику повторных попыток
-            retryPolicy.ExecuteAsync(async () =>
+            retryPolicy.Execute( () =>
             {
                 _connection = _connectionFactory.CreateConnection();
                 _channel = _connection.CreateModel();
@@ -56,17 +60,40 @@ namespace gRPC_Receiver.RabbitMQ
                     durable: true,
                     autoDelete: false
                 );
-                await Task.CompletedTask;
-            }).GetAwaiter().GetResult();
+                // Объявляем очередь
+                _channel.QueueDeclare(
+                    queue: "MyQueue",
+                    durable: true,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null
+                );
+
+                // Привязываем очередь к Exchange
+                _channel.QueueBind(
+                    queue: "MyQueue",
+                    exchange: Exchange,
+                    routingKey: RoutingKey
+                );
+            });
 
             if (_connection == null || !_connection.IsOpen)
             {
                 throw new InvalidOperationException("Не удалось установить соединение с RabbitMQ.");
             }
+            return true;
         }
 
-        public  Task PublishMessage<T>(T message)
+        public void PublishMessage<T>(T message)
         {
+            //​Объект Lazy<Task> инициализируется при первом обращении к его свойству Value
+            // Инициализируем соединение при первом вызове PublishMessage
+            //await _initializeTask.Value();
+            if (!_initialize.Value)
+            {
+                throw new InvalidOperationException("Инициализация соединения не удалась.");
+            }
+
             if (_channel == null || !_channel.IsOpen)
             {
                 throw new InvalidOperationException("Канал не инициализирован или закрыт.");
@@ -86,8 +113,6 @@ namespace gRPC_Receiver.RabbitMQ
                 routingKey: RoutingKey,
                 basicProperties: properties,
                 body: bytes);
-
-            return Task.CompletedTask;
         }
 
         // Метод для закрытия соединения и канала при завершении работы приложения
