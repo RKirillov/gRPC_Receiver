@@ -3,6 +3,7 @@
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using gRPC_Receiver.RabbitMQ;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
@@ -12,14 +13,22 @@
         private readonly IReceiverService _receiverService;
         private Timer _timer;
         private bool _isProcessing = false;
+        private bool _isConnceted = false;
+        private readonly IProducerMessageService _producerMessageService;
 
-        public ReceiverServiceWithTimer(ILogger<ReceiverServiceWithTimer> logger, IReceiverService receiverService)
+        public ReceiverServiceWithTimer(ILogger<ReceiverServiceWithTimer> logger, IReceiverService receiverService, IProducerMessageService producerMessageService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _receiverService = receiverService ?? throw new ArgumentNullException(nameof(receiverService));
+            _producerMessageService = producerMessageService;
             _timer = new Timer(ReceiveEntitiesCallback, null, Timeout.Infinite, Timeout.Infinite);
+            // Подписка на событие изменения статуса подключения
+            _producerMessageService.OnConnectionStatusChanged += HandleConnectionStatusChanged;
         }
-
+        private void HandleConnectionStatusChanged(bool isConnected)
+        {
+            _isConnceted = isConnected;
+        }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             // Запуск таймера, который будет вызывать метод каждые 5 секунд
