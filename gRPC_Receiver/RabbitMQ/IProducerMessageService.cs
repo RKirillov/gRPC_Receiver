@@ -1,10 +1,9 @@
 ﻿
+
 namespace gRPC_Receiver.RabbitMQ
 {
-    public interface IProducerMessageService : IDisposable
+    public interface IProducerMessageService 
     {
-        event Action<bool>? OnConnectionStatusChanged;
-
-        void PublishMessage<T>(T message);
+        Task PublishMessage<T>(T message);
     }
 }

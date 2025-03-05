@@ -27,7 +27,7 @@ namespace gRPC_Receiver.RabbitMQ
                 {
                     try
                     {
-                        _producerMessageService.PublishMessage(entity);
+                       await _producerMessageService.PublishMessage(entity);
                     }
                     catch (Exception ex)
                     {

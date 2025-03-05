@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System.Threading.Channels;
 using gRPC_Receiver.Entity;
+using MassTransit;
 
 // Регистрация сервисов
 var builder = WebApplication.CreateBuilder(args);
@@ -59,20 +60,18 @@ builder.Services.Configure<BusConnectOptions>(builder.Configuration.GetSection("
 
 
 // Регистрация фабрики соединений как Singleton
-builder.Services.AddSingleton<IConnectionFactory>(provider =>
+builder.Services.AddMassTransit(x =>
 {
-    var busOptions = provider.GetRequiredService<IOptions<BusConnectOptions>>().Value;
-    return new ConnectionFactory()
+    x.UsingRabbitMq((context, cfg) =>
     {
-        UserName = busOptions.Username,
-        Password = busOptions.Password,
-        HostName = busOptions.Host,
-        Port = busOptions.Port,
-        VirtualHost = busOptions.VirtualHost
-    };
+        var busOptions = context.GetRequiredService<IOptions<BusConnectOptions>>().Value;
+        cfg.Host(busOptions.Host, busOptions.VirtualHost, h =>
+        {
+            h.Username(busOptions.Username);
+            h.Password(busOptions.Password);
+        });
+    });
 });
-
-
 
 
 // Настройка Swagger (если используется)
